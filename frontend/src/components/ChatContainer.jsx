@@ -19,50 +19,56 @@ const ChatContainer = () => {
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
+  // 1) Fetch history AND start listening over socket
   useEffect(() => {
-    getMessages(selectedUser._id);
-    subscribeToMessages();
-    return () => unsubscribeFromMessages();
-  }, [selectedUser._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
+    if (!selectedUser?._id) return;
 
+    // load past messages
+    getMessages(selectedUser._id);
+
+    // begin listening for new messages from this user
+    subscribeToMessages();
+
+    // cleanup when switching away or unmounting
+    return () => {
+      unsubscribeFromMessages();
+    };
+  }, [selectedUser?._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
+
+  // 2) Every time `messages` changes (including socket pushes), scroll to bottom
   useEffect(() => {
-    if (messageEndRef.current && messages) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   if (isMessagesLoading) {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex-1 flex flex-col overflow-auto">
         <ChatHeader />
-        <div className="flex-1 p-4">
-          <MessageSkeleton />
-        </div>
+        <MessageSkeleton />
         <MessageInput />
       </div>
     );
   }
 
   return (
-    // make this take 100% height, but don’t overflow here
-    <div className="flex flex-col h-full">
+    <div className="flex-1 flex flex-col">
       <ChatHeader />
 
-      {/* only this div scrolls */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
             key={message._id}
-            className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
-            ref={messageEndRef}
+            className={`chat ${
+              message.senderId === authUser._id ? "chat-end" : "chat-start"
+            }`}
           >
             <div className="chat-image avatar">
-              <div className="w-10 h-10 rounded-full border">
+              <div className="size-10 rounded-full border">
                 <img
                   src={
                     message.senderId === authUser._id
-                      ? authUser.profilePic || "/avatar.png"
-                      : selectedUser.profilePic || "/avatar.png"
+                      ? authUser.profilepic || "/avatar.png"
+                      : selectedUser.profilepic || "/avatar.png"
                   }
                   alt="profile pic"
                 />
@@ -78,18 +84,21 @@ const ChatContainer = () => {
                 <img
                   src={message.image}
                   alt="Attachment"
-                  className="max-w-[200px] rounded-md mb-2"
+                  className="sm:max-w-[200px] rounded-md mb-2"
                 />
               )}
               {message.text && <p>{message.text}</p>}
             </div>
           </div>
         ))}
+
+        {/* end‐of‐list marker */}
+        <div ref={messageEndRef} />
       </div>
 
-      {/* always pinned at the bottom */}
       <MessageInput />
     </div>
   );
 };
+
 export default ChatContainer;
