@@ -21,9 +21,7 @@ const ChatContainer = () => {
 
   useEffect(() => {
     getMessages(selectedUser._id);
-
     subscribeToMessages();
-
     return () => unsubscribeFromMessages();
   }, [selectedUser._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
 
@@ -35,18 +33,22 @@ const ChatContainer = () => {
 
   if (isMessagesLoading) {
     return (
-      <div className="flex-1 flex flex-col overflow-auto">
+      <div className="flex flex-col h-full">
         <ChatHeader />
-        <MessageSkeleton />
+        <div className="flex-1 p-4">
+          <MessageSkeleton />
+        </div>
         <MessageInput />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-auto">
+    // make this take 100% height, but don’t overflow here
+    <div className="flex flex-col h-full">
       <ChatHeader />
 
+      {/* only this div scrolls */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
@@ -54,8 +56,8 @@ const ChatContainer = () => {
             className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
             ref={messageEndRef}
           >
-            <div className=" chat-image avatar">
-              <div className="size-10 rounded-full border">
+            <div className="chat-image avatar">
+              <div className="w-10 h-10 rounded-full border">
                 <img
                   src={
                     message.senderId === authUser._id
@@ -76,7 +78,7 @@ const ChatContainer = () => {
                 <img
                   src={message.image}
                   alt="Attachment"
-                  className="sm:max-w-[200px] rounded-md mb-2"
+                  className="max-w-[200px] rounded-md mb-2"
                 />
               )}
               {message.text && <p>{message.text}</p>}
@@ -85,6 +87,7 @@ const ChatContainer = () => {
         ))}
       </div>
 
+      {/* always pinned at the bottom */}
       <MessageInput />
     </div>
   );
